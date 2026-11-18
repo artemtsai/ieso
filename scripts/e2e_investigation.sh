@@ -1,5 +1,5 @@
 #!/bin/bash
-# End-to-end remote investigation of a network failure (build step 4, DESIGN.md §13 demo step 3).
+# End-to-end remote investigation of a network failure (build step 4).
 #
 #   scripts/e2e_investigation.sh [--down]
 #

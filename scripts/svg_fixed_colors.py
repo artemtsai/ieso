@@ -4,6 +4,11 @@
 draw.io writes adaptive colors as CSS light-dark(<as drawn>, <inverted>), so a viewer in dark mode inverts the
 diagram. This replaces each light-dark(a, b) with a and sets color-scheme to the given scheme, so the SVG looks
 the same everywhere. Usage: svg_fixed_colors.py <file.svg> [dark|light]
+
+Re-export the architecture diagram after editing docs/Ieso.drawio (from the repo root):
+  /Applications/draw.io.app/Contents/MacOS/draw.io --export --format svg --border 16 \
+    --output docs/Ieso-architecture.svg docs/Ieso.drawio
+  scripts/svg_fixed_colors.py docs/Ieso-architecture.svg dark
 """
 import sys
 

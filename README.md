@@ -15,7 +15,7 @@
   <br><br>
   <a href="docs/AIREASONING.md">AI reasoning</a>
   ·
-  <a href="docs/Ieso.svg">Architecture</a>
+  <a href="docs/Ieso-architecture.svg">Architecture</a>
   ·
   <a href="#getting-started">Get started</a>
   ·
@@ -89,7 +89,7 @@ Two constraints shape everything:
 | Lifecycle, resources, unified logs, crash and hang reports, an Accessibility responsiveness probe, error dialogs | A tiered flight recorder: 5 s at 100 ms, 10 min at 1 s, 24 h of 1-minute aggregates | On an anomaly: raise the app’s log level, take a stack sample, freeze the recorder | In the cloud: fleet diff, then signed probes chosen by an AI reasoner and approved by policy | A Grafana timeline and a report with root cause, confidence, evidence chain and fix |
 
 <div align="center">
-  <img src="docs/Ieso.svg" alt="Ieso architecture: the macOS endpoint with the C++ sensor, the backend with ingress, OTel Collector, Prometheus, Loki, control plane, SeaweedFS and Grafana, the AI investigator, and the demo network with a TLS-inspecting proxy" width="820">
+  <img src="docs/Ieso-architecture.svg" alt="Ieso architecture: the macOS endpoint with the C++ sensor, the backend with ingress, OTel Collector, Prometheus, Loki, control plane, SeaweedFS and Grafana, the AI investigator, and the demo network with a TLS-inspecting proxy" width="820">
 </div>
 
 ### Key features
@@ -316,7 +316,7 @@ Every run prints the active mode, for example `Claude reasoner: ENABLED (claude-
 | --- | --- |
 | [Design](docs/DESIGN.md) | Problem exploration, requirements, events ontology, actor matrix, mechanisms, backend, security, scope |
 | [AI reasoning](docs/AIREASONING.md) | Where the investigator runs, the loop, the reasoners, probe checks, guardrails, results |
-| [Architecture diagram](docs/Ieso.svg) | The whole system ([draw.io source](docs/Ieso.drawio)) |
+| [Architecture diagram](docs/Ieso-architecture.svg) | The whole system ([draw.io source](docs/Ieso.drawio)) |
 | [Investigation flow](docs/investigator-flow.svg) | The remote-investigation loop, slide-ready |
 | [Style guide](docs/STYLEGUIDE.md) | The C++ rules every change follows |
 | [Sensor internals](sensor/README.md) | Core headers, actors, tests, known gaps |

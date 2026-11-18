@@ -1,6 +1,5 @@
 # System Design: Enterprise Endpoint Observability & Remote Diagnostics Agent (macOS)
 
-Nov 17, 2026 · @Artem
 
 ## 1. Executive summary
 
@@ -80,9 +79,8 @@ The sensor is a small, native, actor-based C++17 process whose throughput and me
 
 Three tiers: an out-of-process sensor on each Mac, a control plane that issues policy and signed probes, and a backend where the AI investigator reasons over the whole fleet.
 
-![High-level architecture: endpoint sensor, control plane, backend, AI investigator](Ieso.svg)
+![High-level architecture: endpoint sensor, control plane, backend, AI investigator](Ieso-architecture.svg)
 
-*Source: [`Ieso.drawio`](Ieso.drawio). After editing it, re-export with `/Applications/draw.io.app/Contents/MacOS/draw.io --export --format svg --border 16 --output docs/Ieso.svg docs/Ieso.drawio && scripts/svg_fixed_colors.py docs/Ieso.svg dark` (the second step pins the night-theme colors, so dark-mode viewers don't invert them).*
 
 Read it top down. The sensor observes the app only through macOS telemetry. All actors talk only through the event bus, and only sanitized CloudEvents leave the Mac. Back in the cloud, the investigator turns bundles and fleet data into probe requests that return through the control plane: the loop that replaces asking the customer.
 
@@ -90,34 +88,25 @@ Read it top down. The sensor observes the app only through macOS telemetry. All 
 
 FR-1 to FR-10 keep the original intent, with mechanisms made concrete. FR-11 to FR-17 are new and answer the "logs are only somewhat helpful" and "customer not accessible" parts of the prompt.
 
-**Edge sensor**
-
-- **FR-1 Black-box telemetry.** Collect process metrics (libproc), lifecycle (NSWorkspace, kqueue), unified log streams for the app and selected Apple subsystems, crash/hang reports, and install integrity, without modifying the target app.
-- **FR-2 Tiered flight recorder.** Keep three rings (in memory, with the 10 min and 24 h tiers checkpointed to disk, NFR-11): 5 s at 100 ms, 10 min at 1 s, and 24 h of 1-minute aggregates. Freeze all three on an anomaly. This covers sudden freezes as well as slow leaks and disk exhaustion. A sensor restart, agent update or reboot must not erase the history.
-- **FR-3 Anomaly and crash watchdog.** Detect hangs with an Accessibility responsiveness probe, and confirm with hang reports. Detect exits with kqueue `NOTE_EXIT`, then get the exit cause from the new `.ips` report via FSEvents, or from ES `NOTIFY_EXIT` when available. Also detect crash loops, resource anomalies, and helper-daemon failures (`launchctl print`).
-- **FR-4 Incident bundle.** Package the frozen rings, the deep capture, the system snapshot and the baseline diff into a signed, versioned JSON bundle.
-- **FR-5 Edge PII sanitization.** Only events marked egress-eligible pass through the PII filter, which wraps them in `CloudEventSanitized` envelopes (CloudEvents 1.0, unique `id`).
-
-**Control plane and transport**
-
-- **FR-6 Enrollment.** First run uses an MDM-delivered enrollment token. The device key pair is generated in the Keychain (Secure Enclave where available) and is never exported. The issued certificate binds the endpoint ID in its CN/SAN.
-- **FR-7 Dynamic policy.** Apply new polling intervals, thresholds, probe allowlist and log levels at runtime without restarting the agent or the app.
-- **FR-8 Store-and-forward.** On send failure, spool compressed events to disk. On reconnect, drain with priority (incidents first), rate limiting and backoff. Delivery is at-least-once, with dedupe by event ID at the backend.
-
-**Backend**
-
-- **FR-9 OTLP ingress.** An OpenTelemetry Collector receives metrics and logs. Incident bundles go to object storage.
-- **FR-10 Dashboards.** Grafana shows process health time-series beside pre-crash logs and incident markers on one timeline.
-
-**New: closing the diagnosis loop**
-
-- **FR-11 Adaptive log verbosity.** When an anomaly fires, raise the target app's own os\_log subsystem to debug for N minutes (`log config --subsystem <vendor> --mode level:debug,persist:debug`), then revert automatically.
-- **FR-12 User-visible error capture.** An AXObserver on the app's process records when an alert or sheet appears and captures its text, after redaction. This tells us what the user saw without asking them.
-- **FR-13 Baseline and drift diff.** Keep a last-known-good snapshot of the environment (OS build, app version, profiles, system extensions, TCC grants, proxy/DNS). Each incident includes what changed since then.
-- **FR-14 Remote diagnostic probes.** The backend can request probes from a signed, versioned allowlist (for example: synthetic TLS check through the user's proxy, `launchctl print` on the helper, TCC state, a 60 s ES capture). The endpoint enforces the allowlist and a budget.
-- **FR-15 Fleet differential diagnosis.** Compare failing endpoints with healthy ones on the same app version and find the attributes that are over-represented among failures.
-- **FR-16 AI investigator.** An LLM-driven loop reads the bundle and the fleet diff, forms ranked hypotheses, chooses probes to separate them, and stops at a root-cause report with its evidence chain and a confidence level.
-- **FR-17 Incident index.** Every incident is searchable by endpoint, app version, symptom class, crash signature and root cause.
+| ID | Requirement | Description | Area |
+| --- | --- | --- | --- |
+| FR-1 | Black-box telemetry | Collect process metrics (libproc), lifecycle (NSWorkspace, kqueue), unified log streams for the app and selected Apple subsystems, crash/hang reports, and install integrity, without modifying the target app. | Edge sensor |
+| FR-2 | Tiered flight recorder | Keep three rings (in memory, with the 10 min and 24 h tiers checkpointed to disk, NFR-11): 5 s at 100 ms, 10 min at 1 s, and 24 h of 1-minute aggregates. Freeze all three on an anomaly. This covers sudden freezes as well as slow leaks and disk exhaustion. A sensor restart, agent update or reboot must not erase the history. | Edge sensor |
+| FR-3 | Anomaly and crash watchdog | Detect hangs with an Accessibility responsiveness probe, and confirm with hang reports. Detect exits with kqueue `NOTE_EXIT`, then get the exit cause from the new `.ips` report via FSEvents, or from ES `NOTIFY_EXIT` when available. Also detect crash loops, resource anomalies, and helper-daemon failures (`launchctl print`). | Edge sensor |
+| FR-4 | Incident bundle | Package the frozen rings, the deep capture, the system snapshot and the baseline diff into a signed, versioned JSON bundle. | Edge sensor |
+| FR-5 | Edge PII sanitization | Only events marked egress-eligible pass through the PII filter, which wraps them in `CloudEventSanitized` envelopes (CloudEvents 1.0, unique `id`). | Edge sensor |
+| FR-6 | Enrollment | First run uses an MDM-delivered enrollment token. The device key pair is generated in the Keychain (Secure Enclave where available) and is never exported. The issued certificate binds the endpoint ID in its CN/SAN. | Control plane, transport |
+| FR-7 | Dynamic policy | Apply new polling intervals, thresholds, probe allowlist and log levels at runtime without restarting the agent or the app. | Control plane, transport |
+| FR-8 | Store-and-forward | On send failure, spool compressed events to disk. On reconnect, drain with priority (incidents first), rate limiting and backoff. Delivery is at-least-once, with dedupe by event ID at the backend. | Control plane, transport |
+| FR-9 | OTLP ingress | An OpenTelemetry Collector receives metrics and logs. Incident bundles go to object storage. | Backend |
+| FR-10 | Dashboards | Grafana shows process health time-series beside pre-crash logs and incident markers on one timeline. | Backend |
+| FR-11 | Adaptive log verbosity | When an anomaly fires, raise the target app's own os\_log subsystem to debug for N minutes (`log config --subsystem <vendor> --mode level:debug,persist:debug`), then revert automatically. | Diagnosis loop (new) |
+| FR-12 | User-visible error capture | An AXObserver on the app's process records when an alert or sheet appears and captures its text, after redaction. This tells us what the user saw without asking them. | Diagnosis loop (new) |
+| FR-13 | Baseline and drift diff | Keep a last-known-good snapshot of the environment (OS build, app version, profiles, system extensions, TCC grants, proxy/DNS). Each incident includes what changed since then. | Diagnosis loop (new) |
+| FR-14 | Remote diagnostic probes | The backend can request probes from a signed, versioned allowlist (for example: synthetic TLS check through the user's proxy, `launchctl print` on the helper, TCC state, a 60 s ES capture). The endpoint enforces the allowlist and a budget. | Diagnosis loop (new) |
+| FR-15 | Fleet differential diagnosis | Compare failing endpoints with healthy ones on the same app version and find the attributes that are over-represented among failures. | Diagnosis loop (new) |
+| FR-16 | AI investigator | An LLM-driven loop reads the bundle and the fleet diff, forms ranked hypotheses, chooses probes to separate them, and stops at a root-cause report with its evidence chain and a confidence level. | Diagnosis loop (new) |
+| FR-17 | Incident index | Every incident is searchable by endpoint, app version, symptom class, crash signature and root cause. | Diagnosis loop (new) |
 
 ## 6. Non-functional requirements
 
@@ -333,37 +322,3 @@ A diagnostics agent with root, Full Disk Access and a remote probe channel is an
 | Agent harms the app it protects | Observer-effect budget, background QoS, kill-switch policy to drop to passive mode |
 
 **Privacy defaults:** no file contents, no keystrokes, no screenshots; dialog text and log messages redacted at the edge; private os\_log data stays redacted unless the customer enables it via profile; retention per tenant (default 30 days for bundles).
-
-## 13. Demo plan, scope and risks
-
-The demo shows one failure end to end: injected on a Mac, detected and explained without touching the "customer".
-
-### Scope for the take-home
-
-| Part | Built | Designed only |
-| --- | --- | --- |
-| C++ sensor | Bus and runtime; Process Watcher, Resource Sampler, Log Collector, UI Observer (AX probe), Anomaly, Diagnostics (rings, verbosity escalation, deep capture), PII Filter, Cloud Client, Spooler | Bootstrap/mTLS (stubbed with a local certificate), ES client system extension |
-| Target app | Small macOS "business-critical" demo app with fault switches: hang, crash, leak, network block, permission denial | — |
-| Backend | Docker Compose: nginx mTLS ingress, OTel Collector, Prometheus, Loki, SeaweedFS, Grafana, control-plane API, investigator | Scale-out, multi-tenancy |
-| Investigator | Fleet diff over a simulated fleet of 200 endpoints + the real one; LLM loop with offline fallback; 4 probes end to end | Full probe allowlist |
-
-### Demo script (about 10 minutes of the 55)
-
-1. Show the healthy app and its Grafana timeline.
-2. Trigger a hang. The AX probe detects it, the rings freeze, verbosity escalates, and the incident appears with main-thread stacks.
-3. Trigger a network failure (proxy blocks the backend). The investigator compares with the fleet, requests `net.synthetic_tls` and `net.config`, and reports "TLS interception by proxy X" with its evidence chain.
-4. Pull the network cable: events spool, then drain on reconnect without duplicates.
-
-### Risks
-
-- **Permissions on the demo Mac:** the collectors need Accessibility, Full Disk Access and root for some captures; grant them in advance (System Settings or a local PPPC profile) and verify before presenting.
-- **AX probe false positives** during heavy but legitimate work: require consecutive timeouts and confirm with hang reports.
-- **Vendor app may not use os\_log subsystems:** verbosity escalation then falls back to Apple subsystems plus deep capture.
-- **LLM unavailable on stage:** offline investigator produces the same report shape.
-
-### Future work
-
-- Ship the sensor as an Endpoint Security system extension (exec/open/exit events, self-protection).
-- Network Extension for per-flow visibility of the target app.
-- Learned per-app baselines instead of static thresholds.
-- Feed confirmed root causes back as known-issue signatures, so the next occurrence is diagnosed instantly at the edge.

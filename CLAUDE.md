@@ -1,7 +1,7 @@
 # macOS Endpoint Observability & Remote Diagnostics Agent
 
 Take-home for Palo Alto Networks (AI-assisted coding). Presentation: Thu 2026-11-19, 55 min.
-Full design: `docs/DESIGN.md` (exported from the design doc). Architecture: `docs/Ieso.drawio` (SVG export `docs/Ieso.svg`, embedded in DESIGN.md §4).
+Full design: `docs/DESIGN.md` (exported from the design doc). Architecture: `docs/Ieso.drawio` (SVG export `docs/Ieso-architecture.svg`, embedded in DESIGN.md §4).
 
 ## Prompt
 A business-critical app runs on macOS endpoints and users report problems. Logs are only
