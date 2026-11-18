@@ -2,12 +2,12 @@
 
 <div align="center">
 
-<h1>LESO</h1>
+<h1>Ieso</h1>
 
 <h3><i>Ask the endpoint, not the customer.</i></h3>
 
 <p>
-  macOS endpoint observability and remote diagnostics for a business-critical applications.
+  macOS endpoint observability and remote diagnostics for business-critical applications.
 </p>
 
 <p>
@@ -18,6 +18,8 @@
   <a href="docs/Ieso.svg">Architecture</a>
   ·
   <a href="#getting-started">Get started</a>
+  ·
+  <a href="https://github.com/artemtsai/ieso">GitHub repo</a>
 </p>
 
 <p>
