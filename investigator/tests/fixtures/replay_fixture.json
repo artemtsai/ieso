@@ -1,0 +1,24 @@
+{
+ "format": "ieso-investigator-recording/v1",
+ "scenario": "network-tls-interception (test fixture)",
+ "model": "test-fixture (hand-written, not a Claude output)",
+ "recorded_at": "2026-11-17",
+ "system_prompt": "",
+ "rounds": [
+  {"context": {}, "prompt": "", "response_text": "",
+   "decision": {"hypotheses": [{"cause": "tls_interception", "confidence": 0.55, "rationale": "trust failure, proxy cohort"},
+                               {"cause": "backend_outage", "confidence": 0.15, "rationale": "would hit the whole fleet"}],
+                "next_probes": ["net.config", "net.synthetic_tls"],
+                "conclusion": {"root_cause": "tls_interception", "confidence": 0.55, "summary": "suspected",
+                               "evidence": ["fleet correlation with the proxy"], "suggested_fix": "pending probes"},
+                "done": false}},
+  {"context": {}, "prompt": "", "response_text": "",
+   "decision": {"hypotheses": [{"cause": "tls_interception", "confidence": 0.92, "rationale": "issuer mismatch"}],
+                "next_probes": [],
+                "conclusion": {"root_cause": "tls_interception", "confidence": 0.92,
+                               "summary": "The proxy re-signs the backend certificate.",
+                               "evidence": ["via proxy issuer CorpGuard, direct issuer DemoApp Backend CA"],
+                               "suggested_fix": "Exempt the backend from TLS inspection."},
+                "done": true}}
+ ]
+}

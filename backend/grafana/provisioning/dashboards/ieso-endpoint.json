@@ -1,0 +1,748 @@
+{
+  "uid": "ieso-endpoint",
+  "title": "Ieso - endpoint timeline",
+  "schemaVersion": 39,
+  "version": 1,
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "refresh": "10s",
+  "tags": [
+    "ieso"
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "endpoint",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "query": "label_values(process_memory_rss_bytes, service_instance_id)",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "allValue": ".+"
+      },
+      {
+        "name": "incident",
+        "label": "Incident (evidence filter)",
+        "type": "textbox",
+        "query": "",
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "options": [],
+        "hide": 0,
+        "description": "Set by clicking a report; clear it to show every report's evidence chain."
+      }
+    ]
+  },
+  "annotations": {
+    "list": [
+      {
+        "name": "Crash",
+        "datasource": {
+          "type": "loki",
+          "uid": "loki"
+        },
+        "enable": true,
+        "iconColor": "red",
+        "expr": "{service_instance_id=~\"$endpoint\"} | event_type=\"com.ieso.ProcessCrashDetected\" | json signature=\"data.signature\"",
+        "titleFormat": "Crash",
+        "textFormat": "{{signature}}"
+      },
+      {
+        "name": "Hang",
+        "datasource": {
+          "type": "loki",
+          "uid": "loki"
+        },
+        "enable": true,
+        "iconColor": "light-blue",
+        "expr": "{service_instance_id=~\"$endpoint\"} | event_type=\"com.ieso.ProcessHangDetected\" | json duration_ms=\"data.duration_ms\"",
+        "titleFormat": "Hang",
+        "textFormat": "main thread unresponsive {{duration_ms}} ms"
+      },
+      {
+        "name": "Resource anomaly",
+        "datasource": {
+          "type": "loki",
+          "uid": "loki"
+        },
+        "enable": true,
+        "iconColor": "dark-orange",
+        "expr": "{service_instance_id=~\"$endpoint\"} | event_type=\"com.ieso.ResourceAnomalyDetected\" | json metric=\"data.metric\"",
+        "titleFormat": "Resource anomaly",
+        "textFormat": "{{metric}}"
+      },
+      {
+        "name": "Network error",
+        "datasource": {
+          "type": "loki",
+          "uid": "loki"
+        },
+        "enable": true,
+        "iconColor": "purple",
+        "expr": "{service_instance_id=~\"$endpoint\"} | event_type=\"com.ieso.UserVisibleErrorObserved\" |~ \"(?i)reach server|network|certificate|tls|ssl|connection|offline|timed out\" !~ \"(?i)permission|denied|not permitted\" | json dialog=\"data.dialog_text\"",
+        "titleFormat": "Network error",
+        "textFormat": "{{dialog}}"
+      },
+      {
+        "name": "Permission denied",
+        "datasource": {
+          "type": "loki",
+          "uid": "loki"
+        },
+        "enable": true,
+        "iconColor": "semi-dark-yellow",
+        "expr": "{service_instance_id=~\"$endpoint\"} | event_type=\"com.ieso.UserVisibleErrorObserved\" |~ \"(?i)permission|denied|not permitted\" | json dialog=\"data.dialog_text\"",
+        "titleFormat": "Permission denied",
+        "textFormat": "{{dialog}}"
+      },
+      {
+        "name": "Other error dialog",
+        "datasource": {
+          "type": "loki",
+          "uid": "loki"
+        },
+        "enable": true,
+        "iconColor": "gray",
+        "expr": "{service_instance_id=~\"$endpoint\"} | event_type=\"com.ieso.UserVisibleErrorObserved\" !~ \"(?i)reach server|network|certificate|tls|ssl|connection|offline|timed out\" !~ \"(?i)permission|denied|not permitted\" | json dialog=\"data.dialog_text\"",
+        "titleFormat": "Other error dialog",
+        "textFormat": "{{dialog}}"
+      },
+      {
+        "name": "Bundle uploaded",
+        "datasource": {
+          "type": "loki",
+          "uid": "loki"
+        },
+        "enable": false,
+        "iconColor": "text",
+        "expr": "{service_instance_id=~\"$endpoint\"} | event_type=\"com.ieso.IncidentBundleReady\" | json symptom=\"data.symptom\"",
+        "titleFormat": "Bundle uploaded",
+        "textFormat": "evidence bundle for {{symptom}}"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "CPU % (target app)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "process_cpu_utilization_percent{service_instance_id=~\"$endpoint\"}",
+          "legendFormat": "{{service_instance_id}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Resident memory",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "process_memory_rss_bytes{service_instance_id=~\"$endpoint\"}",
+          "legendFormat": "{{service_instance_id}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Threads",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "process_threads{service_instance_id=~\"$endpoint\"}",
+          "legendFormat": "{{service_instance_id}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Open file descriptors",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "process_open_fds{service_instance_id=~\"$endpoint\"}",
+          "legendFormat": "{{service_instance_id}}"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "table",
+      "title": "Investigation reports (remote, no customer involved)",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "description": "One row per report. Click an incident or root cause to open its evidence chain, or a reasoner to open the round-by-round reasoning trace. Pushed to Loki by the control plane when the report is stored. Colors match the incident markers on the charts: purple network/TLS, yellow permission, red crash/app bug, light blue hang/OS regression, dark orange resource, gray unknown.",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 24,
+        "h": 12
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "{service_name=\"ieso-investigator\", service_instance_id=~\"$endpoint\"} | event_type=\"com.ieso.InvestigationReport\"",
+          "queryType": "range"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "Line",
+            "format": "json",
+            "replace": false,
+            "keepTime": false
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "labels": true,
+              "Line": true,
+              "tsNs": true,
+              "id": true,
+              "evidence_text": true,
+              "endpoint": true,
+              "symptom": true,
+              "summary": true,
+              "detected_level": true,
+              "service_name": true,
+              "service_instance_id": true,
+              "event_type": true,
+              "suggested_fix": true,
+              "crash_text": true,
+              "hang_text": true
+            },
+            "indexByName": {
+              "Time": 0,
+              "incident_id": 1,
+              "root_cause": 2,
+              "confidence": 3,
+              "reasoner": 4,
+              "fleet": 5,
+              "probes": 6,
+              "rounds": 7
+            },
+            "renameByName": {
+              "incident_id": "Incident",
+              "root_cause": "Root cause",
+              "confidence": "Confidence",
+              "reasoner": "Reasoner",
+              "fleet": "Fleet impact",
+              "probes": "Signed probes",
+              "rounds": "Rounds"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Confidence"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 0.5
+                    },
+                    {
+                      "color": "green",
+                      "value": 0.8
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 110
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Root cause"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open evidence chain for ${__data.fields.Incident}",
+                    "url": "/d/ieso-endpoint/ieso-endpoint-timeline?orgId=1&${__url_time_range}&${endpoint:queryparam}&var-incident=${__data.fields.Incident}&viewPanel=panel-8",
+                    "targetBlank": false
+                  }
+                ]
+              },
+              {
+                "id": "custom.width",
+                "value": 190
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "tls_interception": {
+                        "color": "purple",
+                        "index": 0
+                      },
+                      "proxy_misconfiguration": {
+                        "color": "blue",
+                        "index": 1
+                      },
+                      "dns_failure": {
+                        "color": "blue",
+                        "index": 2
+                      },
+                      "backend_outage": {
+                        "color": "dark-red",
+                        "index": 3
+                      },
+                      "dlp_extension_conflict": {
+                        "color": "yellow",
+                        "index": 4
+                      },
+                      "os_regression": {
+                        "color": "light-blue",
+                        "index": 5
+                      },
+                      "app_bug": {
+                        "color": "red",
+                        "index": 6
+                      },
+                      "permission_denied": {
+                        "color": "semi-dark-yellow",
+                        "index": 7
+                      },
+                      "resource_exhaustion": {
+                        "color": "dark-orange",
+                        "index": 8
+                      },
+                      "unknown": {
+                        "color": "gray",
+                        "index": 9
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rounds"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 170
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Incident"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 300
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open evidence chain for ${__data.fields.Incident}",
+                    "url": "/d/ieso-endpoint/ieso-endpoint-timeline?orgId=1&${__url_time_range}&${endpoint:queryparam}&var-incident=${__data.fields.Incident}&viewPanel=panel-8",
+                    "targetBlank": false
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Reasoner"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto",
+                  "wrapText": true
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 200
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open the reasoning trace for ${__data.fields.Incident}",
+                    "targetBlank": false,
+                    "url": "/d/ieso-endpoint/ieso-endpoint-timeline?orgId=1&${__url_time_range}&${endpoint:queryparam}&var-incident=${__data.fields.Incident}&viewPanel=panel-9"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Fleet impact"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto",
+                  "wrapText": true
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 260
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Signed probes"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto",
+                  "wrapText": true
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 190
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "sortBy": [
+          {
+            "displayName": "Time",
+            "desc": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "type": "logs",
+      "title": "Investigation evidence chain ${incident}",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "description": "Root cause, reasoner and the evidence chain of each report, newest first.",
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 24,
+        "h": 13
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "queryType": "range",
+          "expr": "{service_name=\"ieso-investigator\", service_instance_id=~\"$endpoint\"} | event_type=\"com.ieso.InvestigationReport\" | json | incident_id=~\"${incident}.*\" | line_format \"{{.root_cause}} (confidence {{.confidence}}) by {{.reasoner}} for incident {{.incident_id}}\\n{{.evidence_text}}{{ if .hang_text }}\\nHang stack:\\n{{.hang_text}}{{ end }}{{ if .crash_text }}\\nCrash dump:\\n{{.crash_text}}{{ end }}\\nFix: {{.suggested_fix}}\""
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "prettifyLogMessage": false
+      }
+    },
+    {
+      "id": 5,
+      "type": "logs",
+      "title": "Incidents (hang, crash, anomaly, dialog, bundle)",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 41,
+        "w": 24,
+        "h": 8
+      },
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "{service_instance_id=~\"$endpoint\"} | event_type=~\"com.ieso.(ProcessHangDetected|ProcessCrashDetected|ResourceAnomalyDetected|UserVisibleErrorObserved|IncidentBundleReady)\""
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "logs",
+      "title": "All sanitized events (app logs, lifecycle, incidents)",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 49,
+        "w": 24,
+        "h": 10
+      },
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "{service_name=\"ieso-sensor\", service_instance_id=~\"$endpoint\"}"
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "type": "row",
+      "title": "Reasoning trace (open it from a Reasoner cell)",
+      "collapsed": true,
+      "gridPos": {
+        "x": 0,
+        "y": 59,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [
+        {
+          "id": 9,
+          "type": "logs",
+          "title": "Reasoning trace ${incident}, round by round (oldest first)",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "description": "Per round: Claude's thinking summary (the API returns a summary, never the raw chain of thought), the hypotheses it returned, what the policy layer approved or rejected, and the probe results that fed the next round. Opened from a Reasoner cell in the reports table; Esc returns to the dashboard.",
+          "gridPos": {
+            "x": 0,
+            "y": 60,
+            "w": 24,
+            "h": 22
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "queryType": "range",
+              "expr": "{service_name=\"ieso-investigator\", service_instance_id=~\"$endpoint\"} | event_type=\"com.ieso.InvestigationRound\" | json | incident_id=\"${incident}\" | line_format \"Round {{.round}} of {{.rounds_total}} \u00b7 {{.engine}}{{ if .model }} \u00b7 {{.model}}{{ end }}{{ if .request_id }} \u00b7 {{.request_id}}{{ end }}\\n{{ if .thinking }}Claude thinking (summary returned by the API):\\n{{.thinking}}\\n\\n{{ end }}{{ if .rule }}Rule set: {{.rule}}\\n{{ end }}{{ if .fallback }}Fallback: {{.fallback}}\\n{{ end }}Hypotheses:\\n{{.hypotheses_text}}\\nProbes proposed: {{.proposed}} \u00b7 approved by policy: {{.approved}}{{ if .rejected_text }} \u00b7 rejected: {{.rejected_text}}{{ end }}\\n{{ if .guard }}Policy guard: {{.guard}}\\n{{ end }}{{ if .probe_text }}Probe results (signed, verified and run on the endpoint):\\n{{.probe_text}}\\n{{ end }}Round conclusion: {{.conclusion_text}}\""
+            }
+          ],
+          "options": {
+            "showTime": false,
+            "wrapLogMessage": true,
+            "sortOrder": "Ascending",
+            "enableLogDetails": true,
+            "dedupStrategy": "none"
+          }
+        }
+      ]
+    }
+  ]
+}

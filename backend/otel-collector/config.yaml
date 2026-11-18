@@ -1,0 +1,50 @@
+# OTel Collector: mTLS OTLP/HTTP ingress -> Prometheus (metrics) + Loki (logs). DESIGN.md §11 "Ingress".
+# Transport rule: every endpoint<->backend hop is TLS 1.3 + mTLS; TLS 1.2 and older are refused.
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+    tls:
+      cert_file: /certs/server.pem
+      key_file: /certs/server.key
+      client_ca_file: /certs/ca.pem
+      min_version: "1.3"
+
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+        tls:
+          cert_file: /certs/server.pem
+          key_file: /certs/server.key
+          client_ca_file: /certs/ca.pem   # mTLS: only enrolled endpoints (certs signed by our CA) may send
+          min_version: "1.3"              # TLS 1.2 handshakes are rejected
+
+processors:
+  batch:
+    timeout: 1s
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 256
+
+exporters:
+  otlphttp/prometheus:
+    endpoint: http://prometheus:9090/api/v1/otlp
+    tls: {insecure: true}
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+    tls: {insecure: true}
+  debug:
+    verbosity: basic
+
+service:
+  extensions: [health_check]
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/prometheus]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/loki, debug]

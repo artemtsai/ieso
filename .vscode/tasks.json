@@ -1,0 +1,136 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "ieso: build debug",
+      "type": "shell",
+      "command": "cmake --preset debug && cmake --build --preset debug",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
+      "label": "ieso: test debug (ctest)",
+      "type": "shell",
+      "command": "ctest --preset debug",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "ieso: build debug",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "ieso: build asan",
+      "type": "shell",
+      "command": "cmake --preset asan && cmake --build --preset asan",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
+      "label": "ieso: build tsan",
+      "type": "shell",
+      "command": "cmake --preset tsan && cmake --build --preset tsan",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
+      "label": "ieso: tests (compact)",
+      "type": "shell",
+      "command": "python3 scripts/run_tests.py",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "ieso: tests (compact, ASan)",
+      "type": "shell",
+      "command": "python3 scripts/run_tests.py --preset asan",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "ieso: tests (compact, TSan)",
+      "type": "shell",
+      "command": "python3 scripts/run_tests.py --preset tsan",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "ieso: build demo-app",
+      "type": "shell",
+      "command": "demo-app/build.sh",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "ieso: smoke test (hang crash)",
+      "type": "shell",
+      "command": "scripts/smoke_test.sh hang crash",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "ieso: e2e backend (crash, hang, offline drill)",
+      "type": "shell",
+      "command": "scripts/e2e_backend.sh",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "ieso: backend up",
+      "type": "shell",
+      "command": "backend/certs/gen_certs.sh ep-demo && docker compose -f backend/docker-compose.yml up -d --build",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "ieso: backend down",
+      "type": "shell",
+      "command": "docker compose -f backend/docker-compose.yml down",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

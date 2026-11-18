@@ -1,0 +1,141 @@
+# ieso backend (DESIGN.md §11, demo choices). Start: docker compose up -d   (certs first: certs/gen_certs.sh)
+name: ieso
+
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.115.1
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
+      - ./certs/out:/certs:ro
+    ports:
+      - "4318:4318"     # OTLP/HTTP, mTLS (sensor ingress)
+      - "13133:13133"   # health_check, TLS 1.3 + mTLS
+    depends_on: [prometheus, loki]
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.0.1
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-otlp-receiver
+      - --storage.tsdb.retention.time=7d
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports: ["9090:9090"]
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.3.2
+    command: ["-config.file=/etc/loki/config.yaml"]
+    volumes:
+      - ./loki/config.yaml:/etc/loki/config.yaml:ro
+      - loki-data:/loki
+    ports: ["3100:3100"]
+    restart: unless-stopped
+
+  # S3-compatible object store for incident bundles. DESIGN.md names MinIO; its images are no longer
+  # published, so the demo uses SeaweedFS's S3 gateway (same S3 API, internal network only).
+  object-store:
+    image: chrislusf/seaweedfs:3.80
+    command: ["server", "-dir=/data", "-s3", "-s3.port=8333", "-master.volumeSizeLimitMB=256", "-volume.max=8"]
+    volumes: [object-store-data:/data]
+    restart: unless-stopped
+
+  control-plane:
+    build: ./control-plane
+    environment:
+      S3_ENDPOINT: http://object-store:8333
+      S3_ACCESS_KEY: ieso
+      S3_SECRET_KEY: ieso-demo-secret
+      S3_BUCKET: ieso-bundles
+      DB_PATH: /data/incidents.db
+      PROBE_SIGNING_KEY: /certs/probe-signing.key   # signs probe requests; the sensor pins the public key
+      LOKI_URL: http://loki:3100   # investigation reports -> Grafana panels (best effort)
+      PROBES_PER_ENDPOINT_HOUR: ${IESO_PROBES_PER_ENDPOINT_HOUR:-20}   # policy budget; raise only for testing
+    volumes:
+      - control-plane-data:/data
+      - ./certs/out:/certs:ro
+    depends_on: [object-store, loki]
+    restart: unless-stopped   # plain HTTP :8000 on the internal network only; reached via ingress
+
+  ingress:
+    image: nginx:1.27.3-alpine
+    volumes:
+      - ./ingress/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs/out:/certs:ro
+    ports: ["8443:8443"]   # control plane, mTLS
+    depends_on: [control-plane]
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/provisioning/dashboards/ieso-endpoint.json
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    ports: ["3000:3000"]
+    depends_on: [prometheus, loki]
+    restart: unless-stopped
+
+  # ---- Step 4: fleet simulation and investigator (run on demand: docker compose run --rm sim / investigator ...) ----
+  sim:
+    build: ../sim
+    profiles: ["tools"]
+    environment:
+      CONTROL_PLANE: http://control-plane:8000
+    depends_on: [control-plane]
+
+  investigator:
+    build: ../investigator
+    profiles: ["tools"]
+    environment:
+      CONTROL_PLANE: http://control-plane:8000
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}     # optional; from your shell or backend/.env (gitignored)
+      IESO_CLAUDE_MODEL: ${IESO_CLAUDE_MODEL:-}
+    volumes:
+      - ../investigator/recordings:/srv/recordings
+    depends_on: [control-plane]
+
+  investigator-watch:   # always-on: investigates every new incident on real endpoints (reports -> Grafana)
+    build: ../investigator
+    profiles: ["watch"]
+    command: ["watch", "--reasoner", "${IESO_WATCH_REASONER:-auto}", "--max-per-hour", "${IESO_WATCH_MAX_PER_HOUR:-20}"]
+    environment:
+      CONTROL_PLANE: http://control-plane:8000
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}     # optional; without it the offline rule reasoner runs
+      IESO_CLAUDE_MODEL: ${IESO_CLAUDE_MODEL:-}
+    depends_on: [control-plane]
+    restart: unless-stopped
+
+  # ---- Step 4 network-failure demo (profile netdemo; names are fictional) ----
+  app-backend:
+    image: nginx:1.27.3-alpine
+    profiles: ["netdemo"]
+    volumes:
+      - ./netdemo/app-backend.conf:/etc/nginx/nginx.conf:ro
+      - ./certs/out:/certs:ro
+    ports: ["9443:9443"]   # DemoApp's own backend (direct path)
+
+  corp-proxy:
+    image: mitmproxy/mitmproxy:11.0.2
+    profiles: ["netdemo"]
+    # Re-signs every TLS connection with the CorpGuard CA. The app reaches its backend by service name
+    # (https://app-backend:9443), which only resolves behind this gateway - like a mandatory corporate proxy.
+    command: mitmdump --listen-port 8889 --set confdir=/home/mitmproxy/.mitmproxy --set ssl_insecure=true
+    volumes:
+      - ./certs/out/corpguard:/home/mitmproxy/.mitmproxy
+    ports: ["8889:8889"]   # "corporate" TLS-inspecting proxy
+    depends_on: [app-backend]
+
+volumes:
+  prometheus-data:
+  loki-data:
+  object-store-data:
+  control-plane-data:
+  grafana-data:

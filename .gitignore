@@ -1,0 +1,11 @@
+build/
+.DS_Store
+.cache/
+compile_commands.json
+__pycache__/
+*.pyc
+.venv/
+.env
+backend/certs/out/
+backend/.env
+investigator/.venv/

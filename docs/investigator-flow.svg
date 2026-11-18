@@ -1,0 +1,161 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#334155"/>
+    </marker>
+    <marker id="arrowp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6D28D9"/>
+    </marker>
+    <style>
+      .h  { font-size: 17px; font-weight: 700; letter-spacing: 0.06em; }
+      .bt { font-size: 17px; font-weight: 700; fill: #0F172A; }
+      .b  { font-size: 14.5px; fill: #334155; }
+      .s  { font-size: 13.5px; fill: #475569; }
+      .lbl{ font-size: 14px; fill: #0F172A; font-weight: 600; }
+      .box{ fill: #FFFFFF; stroke: #CBD5E1; stroke-width: 1.5; }
+      .num{ font-size: 14px; font-weight: 700; fill: #FFFFFF; text-anchor: middle; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="900" fill="#FFFFFF"/>
+
+  <!-- title -->
+  <text x="40" y="58" font-size="32" font-weight="700" fill="#0F172A">Remote investigation: ask the endpoint, not the customer</text>
+  <text x="40" y="90" font-size="17" fill="#475569">The investigator runs in the cloud. The endpoint only sends sanitized evidence and runs signed, read-only probes.</text>
+
+  <!-- ===================== ENDPOINT ===================== -->
+  <rect x="40" y="120" width="440" height="700" rx="14" fill="#EFF6FF" stroke="#3B82F6" stroke-width="2"/>
+  <text x="64" y="152" class="h" fill="#1D4ED8">ENDPOINT · macOS</text>
+  <text x="64" y="174" class="s">ieso-sensor, outside the app's process</text>
+
+  <rect x="64" y="192" width="392" height="76" rx="10" class="box"/>
+  <text x="82" y="220" class="bt">Collectors</text>
+  <text x="82" y="244" class="b">process watcher · AX hang probe · dialogs</text>
+  <text x="82" y="262" class="b">.ips crash reports · log stream · resources</text>
+
+  <rect x="64" y="292" width="392" height="76" rx="10" class="box"/>
+  <text x="82" y="320" class="bt">Incident + bundle</text>
+  <text x="82" y="344" class="b">crash dump · hang stack sample (≤ 4/h)</text>
+  <text x="82" y="362" class="b">flight-recorder rings · recent logs</text>
+
+  <rect x="64" y="392" width="392" height="76" rx="10" class="box"/>
+  <text x="82" y="420" class="bt">PII filter → spool</text>
+  <text x="82" y="444" class="b">redacts users, home paths, IPs</text>
+  <text x="82" y="462" class="b">at-least-once delivery, survives offline</text>
+
+  <line x1="260" y1="268" x2="260" y2="290" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="260" y1="368" x2="260" y2="390" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="64" y="540" width="392" height="256" rx="10" fill="#FFFFFF" stroke="#1D4ED8" stroke-width="2"/>
+  <text x="82" y="570" class="bt">Probe runner: verifies before it runs</text>
+  <text x="82" y="602" class="b">1  signature: ECDSA P-256, pinned public key</text>
+  <text x="82" y="630" class="b">2  probe ID on the compiled-in allowlist</text>
+  <text x="82" y="658" class="b">3  own endpoint ID · not expired · no replay</text>
+  <text x="82" y="686" class="b">4  budget: 4 per incident · 20 per hour</text>
+  <text x="82" y="714" class="b">5  run read-only probe, output ≤ 8 KB</text>
+  <text x="82" y="748" class="s">net.config · net.synthetic_tls · env.extensions</text>
+  <text x="82" y="768" class="s">svc.launchctl. IDs only, never commands.</text>
+  <text x="82" y="788" class="s">Refusals are reported back with the reason.</text>
+
+  <!-- trust boundary -->
+  <line x1="520" y1="120" x2="520" y2="820" stroke="#94A3B8" stroke-width="2" stroke-dasharray="8 7"/>
+  <text x="520" y="113" text-anchor="middle" font-size="13" font-weight="600" fill="#64748B">mTLS · TLS 1.3</text>
+
+  <!-- ===================== CONTROL PLANE ===================== -->
+  <rect x="560" y="120" width="460" height="700" rx="14" fill="#F8FAFC" stroke="#64748B" stroke-width="2"/>
+  <text x="584" y="152" class="h" fill="#334155">CLOUD · control plane</text>
+  <text x="584" y="174" class="s">behind the mTLS ingress; admin API internal only</text>
+
+  <rect x="584" y="192" width="412" height="76" rx="10" class="box"/>
+  <text x="602" y="220" class="bt">Incident index + bundle store</text>
+  <text x="602" y="244" class="b">deduped events · sanitized bundles (S3)</text>
+  <text x="602" y="262" class="b">probe results linked by request ID</text>
+
+  <rect x="584" y="292" width="412" height="56" rx="10" class="box"/>
+  <text x="602" y="318" class="bt">Fleet inventory</text>
+  <text x="602" y="338" class="b">200 simulated endpoints + this Mac</text>
+
+  <rect x="584" y="540" width="412" height="150" rx="10" fill="#FFFFFF" stroke="#334155" stroke-width="2"/>
+  <text x="602" y="570" class="bt">Policy layer + signer: decides</text>
+  <text x="602" y="600" class="b">allowlist · only the incident's own endpoint</text>
+  <text x="602" y="626" class="b">budget: 4 per incident · 20 per endpoint per hour</text>
+  <text x="602" y="652" class="b">signs v1|request|endpoint|probe|incident|times</text>
+  <text x="602" y="676" class="s">ECDSA P-256 · 120 s TTL · 403 / 404 / 429 otherwise</text>
+
+  <rect x="584" y="720" width="412" height="76" rx="10" class="box"/>
+  <text x="602" y="748" class="bt">Reports → Loki → Grafana</text>
+  <text x="602" y="772" class="b">reports table (colored by root cause)</text>
+  <text x="602" y="790" class="b">click-through evidence chain</text>
+
+  <!-- ===================== INVESTIGATOR ===================== -->
+  <rect x="1060" y="120" width="500" height="700" rx="14" fill="#F5F3FF" stroke="#7C3AED" stroke-width="2"/>
+  <text x="1084" y="152" class="h" fill="#6D28D9">CLOUD · investigator</text>
+  <text x="1084" y="174" class="s">own container; the API key never reaches the endpoint</text>
+
+  <rect x="1084" y="192" width="452" height="54" rx="10" class="box"/>
+  <text x="1102" y="216" class="bt">1  Triage</text>
+  <text x="1102" y="236" class="b">symptom: crash · hang · network · permission · resource</text>
+
+  <rect x="1084" y="256" width="452" height="54" rx="10" class="box"/>
+  <text x="1102" y="280" class="bt">2  Fleet diff</text>
+  <text x="1102" y="300" class="b">lift per attribute: proxy=corpguard-swg 5.2 → 42/49, 3.9x</text>
+
+  <rect x="1084" y="320" width="452" height="54" rx="10" class="box"/>
+  <text x="1102" y="344" class="bt">3  Dumps</text>
+  <text x="1102" y="364" class="b">crash frames + NULL deref · hang heaviest main-thread stack</text>
+
+  <rect x="1084" y="386" width="452" height="296" rx="10" fill="#FFFFFF" stroke="#7C3AED" stroke-width="2"/>
+  <text x="1102" y="412" class="bt">4  Hypothesis / probe loop</text>
+  <text x="1102" y="432" class="s">≤ 3 rounds · stop at confidence ≥ 0.8 or when done</text>
+
+  <rect x="1102" y="446" width="416" height="70" rx="8" fill="#EDE9FE" stroke="#C4B5FD"/>
+  <text x="1118" y="470" class="lbl">Reasoner proposes (one JSON schema)</text>
+  <text x="1118" y="490" class="b">Claude opus-5-5 · offline rules · replay</text>
+  <text x="1118" y="508" class="s">hypotheses + confidences · probe IDs · conclusion</text>
+
+  <rect x="1102" y="530" width="416" height="70" rx="8" fill="#FEF3C7" stroke="#FCD34D"/>
+  <text x="1118" y="554" class="lbl">Guard + pre-check, in code</text>
+  <text x="1118" y="574" class="b">no network blame without network frames</text>
+  <text x="1118" y="592" class="s">allowlist · no repeats · budget; rejects fed back</text>
+
+  <text x="1118" y="626" class="b">probe facts: leaf issuer via proxy vs direct,</text>
+  <text x="1118" y="646" class="b">effective proxy, extensions → next round</text>
+  <line x1="1310" y1="516" x2="1310" y2="528" stroke="#6D28D9" stroke-width="2" marker-end="url(#arrowp)"/>
+  <path d="M1480 650 C1532 650 1532 482 1521 482" fill="none" stroke="#6D28D9" stroke-width="2" marker-end="url(#arrowp)"/>
+
+  <rect x="1084" y="700" width="452" height="96" rx="10" class="box"/>
+  <text x="1102" y="726" class="bt">5  Report</text>
+  <text x="1102" y="750" class="b">root cause · confidence · evidence chain · fix</text>
+  <text x="1102" y="770" class="b">fleet impact (+7 endpoints at risk) · crash / hang dump</text>
+  <text x="1102" y="788" class="s">or unknown + low confidence when evidence is missing</text>
+
+  <!-- ===================== FLOWS ===================== -->
+  <!-- 1: sanitized incident -->
+  <path d="M456 430 C510 430 520 230 582 230" fill="none" stroke="#334155" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <circle cx="527" cy="300" r="13" fill="#1D4ED8"/><text x="527" y="305" class="num">1</text>
+
+  <!-- 2: investigator reads -->
+  <line x1="996" y1="250" x2="1082" y2="250" stroke="#334155" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <circle cx="1039" cy="232" r="13" fill="#6D28D9"/><text x="1039" y="237" class="num">2</text>
+
+  <!-- 3: probe request -->
+  <path d="M1084 600 C1050 600 1040 610 998 610" fill="none" stroke="#6D28D9" stroke-width="2.5" marker-end="url(#arrowp)"/>
+  <circle cx="1040" cy="584" r="13" fill="#6D28D9"/><text x="1040" y="589" class="num">3</text>
+
+  <!-- 4: signed request to endpoint -->
+  <line x1="584" y1="600" x2="458" y2="600" stroke="#334155" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <circle cx="527" cy="582" r="13" fill="#334155"/><text x="527" y="587" class="num">4</text>
+
+  <!-- 5: result back -->
+  <path d="M456 700 C530 700 520 262 582 262" fill="none" stroke="#334155" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arrow)"/>
+  <circle cx="540" cy="470" r="13" fill="#1D4ED8"/><text x="540" y="475" class="num">5</text>
+
+  <!-- 6: report -->
+  <path d="M1084 750 C1050 750 1040 758 998 758" fill="none" stroke="#6D28D9" stroke-width="2.5" marker-end="url(#arrowp)"/>
+  <circle cx="1040" cy="734" r="13" fill="#6D28D9"/><text x="1040" y="739" class="num">6</text>
+
+  <!-- footer -->
+  <text x="40" y="848" font-size="14.5" fill="#334155"><tspan font-weight="700">Flow:</tspan>  1 sanitized incident + bundle  ·  2 investigator reads incident, fleet, bundle  ·  3 proposes a probe  ·  4 signed request (sensor polls every 3 s)  ·  5 result as an event  ·  6 report</text>
+  <text x="40" y="874" font-size="17" fill="#0F172A"><tspan font-weight="700">The LLM proposes, the policy decides.</tspan> Three independent probe checks: investigator, control plane, endpoint.</text>
+  <text x="40" y="895" font-size="14.5" fill="#475569">Only PII-filtered data leaves the Mac · probes are read-only IDs · a compromised backend still cannot make the sensor run arbitrary code</text>
+</svg>

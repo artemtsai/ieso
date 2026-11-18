@@ -1,0 +1,405 @@
+{
+  "version": "0.2.0",
+  "inputs": [
+    {
+      "id": "gtestFilter",
+      "type": "promptString",
+      "description": "GoogleTest filter (e.g. Bus.*, Spool.TtlPurge, *Redactor*, ProcessWatcher.*)",
+      "default": "Bus.*"
+    },
+    {
+      "id": "preset",
+      "type": "pickString",
+      "description": "Build preset",
+      "options": [
+        "debug",
+        "asan",
+        "tsan",
+        "release"
+      ],
+      "default": "debug"
+    },
+    {
+      "id": "suiteFilter",
+      "type": "promptString",
+      "description": "Suite regex for scripts/run_tests.py (empty = all)",
+      "default": ""
+    },
+    {
+      "id": "fault",
+      "type": "pickString",
+      "description": "DemoApp fault switch",
+      "options": [
+        "hang",
+        "crash",
+        "leak",
+        "network",
+        "permission"
+      ],
+      "default": "hang"
+    },
+    {
+      "id": "reasoner",
+      "type": "pickString",
+      "description": "Investigator reasoner",
+      "options": [
+        "auto",
+        "rule",
+        "claude",
+        "replay"
+      ],
+      "default": "rule"
+    }
+  ],
+  "configurations": [
+    {
+      "name": "Tests: all (debug)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/debug/sensor/tests/ieso_tests",
+      "args": [
+        "--gtest_color=yes"
+      ],
+      "cwd": "${workspaceFolder}",
+      "MIMode": "lldb",
+      "externalConsole": false,
+      "stopAtEntry": false,
+      "preLaunchTask": "ieso: build debug"
+    },
+    {
+      "name": "Tests: filtered (debug)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/debug/sensor/tests/ieso_tests",
+      "args": [
+        "--gtest_filter=${input:gtestFilter}",
+        "--gtest_color=yes"
+      ],
+      "cwd": "${workspaceFolder}",
+      "MIMode": "lldb",
+      "externalConsole": false,
+      "stopAtEntry": false,
+      "preLaunchTask": "ieso: build debug"
+    },
+    {
+      "name": "Tests: filtered, break on failure (debug)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/debug/sensor/tests/ieso_tests",
+      "args": [
+        "--gtest_filter=${input:gtestFilter}",
+        "--gtest_break_on_failure"
+      ],
+      "cwd": "${workspaceFolder}",
+      "MIMode": "lldb",
+      "externalConsole": false,
+      "stopAtEntry": false,
+      "preLaunchTask": "ieso: build debug"
+    },
+    {
+      "name": "macOS tests: all (debug)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/debug/sensor/tests/ieso_macos_tests",
+      "args": [
+        "--gtest_color=yes"
+      ],
+      "cwd": "${workspaceFolder}",
+      "MIMode": "lldb",
+      "externalConsole": false,
+      "stopAtEntry": false,
+      "preLaunchTask": "ieso: build debug"
+    },
+    {
+      "name": "macOS tests: filtered (debug)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/debug/sensor/tests/ieso_macos_tests",
+      "args": [
+        "--gtest_filter=${input:gtestFilter}",
+        "--gtest_color=yes"
+      ],
+      "cwd": "${workspaceFolder}",
+      "MIMode": "lldb",
+      "externalConsole": false,
+      "stopAtEntry": false,
+      "preLaunchTask": "ieso: build debug"
+    },
+    {
+      "name": "Tests: all (ASan+UBSan)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/asan/sensor/tests/ieso_tests",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "MIMode": "lldb",
+      "externalConsole": false,
+      "stopAtEntry": false,
+      "preLaunchTask": "ieso: build asan",
+      "environment": [
+        {
+          "name": "ASAN_OPTIONS",
+          "value": "abort_on_error=1:detect_stack_use_after_return=1"
+        }
+      ]
+    },
+    {
+      "name": "Tests: all (TSan)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/tsan/sensor/tests/ieso_tests",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "MIMode": "lldb",
+      "externalConsole": false,
+      "stopAtEntry": false,
+      "preLaunchTask": "ieso: build tsan",
+      "environment": [
+        {
+          "name": "TSAN_OPTIONS",
+          "value": "halt_on_error=1"
+        }
+      ]
+    },
+    {
+      "name": "Sensor: --target DemoApp (debug)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/debug/sensor/host/ieso-sensor",
+      "args": [
+        "--target",
+        "DemoApp",
+        "--data-dir",
+        "/tmp/ieso",
+        "--log-level",
+        "debug"
+      ],
+      "cwd": "${workspaceFolder}",
+      "MIMode": "lldb",
+      "externalConsole": false,
+      "stopAtEntry": false,
+      "preLaunchTask": "ieso: build debug"
+    },
+    {
+      "name": "Sensor: --target DemoApp \u2192 backend (debug)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/debug/sensor/host/ieso-sensor",
+      "args": [
+        "--target",
+        "DemoApp",
+        "--data-dir",
+        "/tmp/ieso",
+        "--log-level",
+        "debug",
+        "--endpoint-id",
+        "ep-demo",
+        "--tls-dir",
+        "${workspaceFolder}/backend/certs/out",
+        "--backend",
+        "https://localhost:4318"
+      ],
+      "cwd": "${workspaceFolder}",
+      "MIMode": "lldb",
+      "externalConsole": false,
+      "stopAtEntry": false,
+      "preLaunchTask": "ieso: build debug"
+    },
+    {
+      "name": "Sensor: --selftest (debug)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/debug/sensor/host/ieso-sensor",
+      "args": [
+        "--selftest"
+      ],
+      "cwd": "${workspaceFolder}",
+      "MIMode": "lldb",
+      "externalConsole": false,
+      "stopAtEntry": false,
+      "preLaunchTask": "ieso: build debug"
+    },
+    {
+      "name": "Tests: compact runner (Python)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/run_tests.py",
+      "args": [
+        "--preset",
+        "${input:preset}",
+        "--filter",
+        "${input:suiteFilter}"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "Control plane: run locally (FastAPI, in-memory store)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
+        "app.main:app",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8000"
+      ],
+      "cwd": "${workspaceFolder}/backend/control-plane",
+      "env": {
+        "DB_PATH": "/tmp/ieso-control-plane.db"
+      },
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "Control plane: pytest",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": [
+        "-q",
+        "tests"
+      ],
+      "cwd": "${workspaceFolder}/backend/control-plane",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "Investigator: pytest",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": [
+        "-q",
+        "tests"
+      ],
+      "cwd": "${workspaceFolder}/investigator",
+      "python": "${workspaceFolder}/investigator/.venv/bin/python",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "Investigator: investigate --latest (local control plane)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "ieso_investigator",
+      "args": [
+        "--control-plane",
+        "http://127.0.0.1:8000",
+        "investigate",
+        "--latest",
+        "--reasoner",
+        "${input:reasoner}"
+      ],
+      "cwd": "${workspaceFolder}/investigator",
+      "python": "${workspaceFolder}/investigator/.venv/bin/python",
+      "envFile": "${workspaceFolder}/backend/.env",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "Investigator: doctor",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "ieso_investigator",
+      "args": [
+        "--control-plane",
+        "http://127.0.0.1:8000",
+        "doctor"
+      ],
+      "cwd": "${workspaceFolder}/investigator",
+      "python": "${workspaceFolder}/investigator/.venv/bin/python",
+      "envFile": "${workspaceFolder}/backend/.env",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "Sim: import fleet (local control plane)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "ieso_sim",
+      "args": [
+        "--control-plane",
+        "http://127.0.0.1:8000"
+      ],
+      "cwd": "${workspaceFolder}/sim",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "Sim: pytest",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": [
+        "-q",
+        "tests"
+      ],
+      "cwd": "${workspaceFolder}/sim",
+      "python": "${workspaceFolder}/investigator/.venv/bin/python",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "DemoApp: launch with fault (Swift, lldb)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/demo-app/DemoApp.app/Contents/MacOS/DemoApp",
+      "args": [
+        "--fault",
+        "${input:fault}",
+        "--after",
+        "4"
+      ],
+      "cwd": "${workspaceFolder}",
+      "MIMode": "lldb",
+      "externalConsole": false,
+      "stopAtEntry": false,
+      "preLaunchTask": "ieso: build demo-app"
+    },
+    {
+      "name": "Sensor: attach to running ieso-sensor",
+      "type": "cppdbg",
+      "request": "attach",
+      "program": "${workspaceFolder}/build/debug/sensor/host/ieso-sensor",
+      "processId": "${command:pickProcess}",
+      "MIMode": "lldb"
+    },
+    {
+      "name": "Sensor: --target DemoApp (ASan+UBSan)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/asan/sensor/host/ieso-sensor",
+      "args": [
+        "--target",
+        "DemoApp",
+        "--data-dir",
+        "/tmp/ieso-asan",
+        "--log-level",
+        "debug"
+      ],
+      "cwd": "${workspaceFolder}",
+      "environment": [
+        {
+          "name": "ASAN_OPTIONS",
+          "value": "abort_on_error=1"
+        }
+      ],
+      "MIMode": "lldb",
+      "externalConsole": false,
+      "preLaunchTask": "ieso: build asan"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Sensor + DemoApp (debug both)",
+      "configurations": [
+        "Sensor: --target DemoApp (debug)",
+        "DemoApp: launch with fault (Swift, lldb)"
+      ],
+      "stopAll": true
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+# Prometheus receives OTLP metrics pushed by the collector (--web.enable-otlp-receiver).
+global:
+  scrape_interval: 15s
+otlp:
+  promote_resource_attributes:
+    - service.name
+    - service.instance.id
+storage:
+  tsdb:
+    out_of_order_time_window: 30m   # spooled samples replayed after an outage arrive late
