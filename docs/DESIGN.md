@@ -82,7 +82,7 @@ Three tiers: an out-of-process sensor on each Mac, a control plane that issues p
 
 ![High-level architecture: endpoint sensor, control plane, backend, AI investigator](Ieso.svg)
 
-*Source: [`Ieso.drawio`](Ieso.drawio). After editing it, re-export with `/Applications/draw.io.app/Contents/MacOS/draw.io --export --format svg --border 16 --output docs/Ieso.svg docs/Ieso.drawio`.*
+*Source: [`Ieso.drawio`](Ieso.drawio). After editing it, re-export with `/Applications/draw.io.app/Contents/MacOS/draw.io --export --format svg --border 16 --output docs/Ieso.svg docs/Ieso.drawio && scripts/svg_fixed_colors.py docs/Ieso.svg dark` (the second step pins the night-theme colors, so dark-mode viewers don't invert them).*
 
 Read it top down. The sensor observes the app only through macOS telemetry. All actors talk only through the event bus, and only sanitized CloudEvents leave the Mac. Back in the cloud, the investigator turns bundles and fleet data into probe requests that return through the control plane: the loop that replaces asking the customer.
 
